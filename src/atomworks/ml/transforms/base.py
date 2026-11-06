@@ -14,11 +14,9 @@ from collections.abc import Callable, Iterable
 from typing import Any, ClassVar
 
 import numpy as np
-import torch
 from toolz import valmap
 
 from atomworks.ml.transforms._checks import check_contains_keys, check_does_not_contain_keys
-from atomworks.ml.utils.rng import capture_rng_states, rng_state, serialize_rng_state_dict
 
 logger = logging.getLogger("transforms")
 DEBUG = os.getenv("DEBUG", True)
@@ -531,6 +529,9 @@ class Compose(Transform):
             Exception: If any transform in the pipeline fails, with details about the failure point and RNG state.
         """
 
+        if rng_state_dict or self.track_rng_state:
+            from atomworks.ml.utils.rng import capture_rng_states, rng_state, serialize_rng_state_dict
+
         # set the RNG state context if given
         with (
             rng_state(rng_state_dict, include_cuda=False) if rng_state_dict else contextlib.nullcontext()
@@ -899,6 +900,8 @@ def convert_to_torch(data: dict[str, Any], keys: list[str], device: str = "cpu")
     Returns:
         dict[str, Any]: The data dictionary with numpy arrays converted to torch tensors.
     """
+    import torch
+
     # Set of supported numpy data types
     supported_dtypes = (
         np.float64,
